@@ -3,6 +3,7 @@
 - 初回にterraform apply  -var="bucket_name=terraform-backend-{好きな名前で}" -var="dynamodb_table=terraform-locks"
 
 ## 構成図（draw.io）
+![構成図](architecture.png)
 
 ### 構築対象
 - すべて東京リージョンに作成
