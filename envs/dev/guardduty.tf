@@ -9,7 +9,8 @@ resource "aws_guardduty_detector" "tf_guardduty" {
 
   tags = {
     Name        = "guardduty-detector"
-    Environment = "dev"
+    Description = "GuradDuty"
+    Environment = var.environment
   }
 }
 

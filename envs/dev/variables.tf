@@ -7,6 +7,12 @@ variable "region" {
 
 # CIDR
 variable "vpc_cidr" {
-    description = "VPC CIDR block"
+    description = "VPCのCIDRブロック"
     default = "10.1.0.0/16"
+}
+
+# 環境タグ
+variable "environment" {
+  description = "環境名(dev / prod)"
+  default = "dev"
 }

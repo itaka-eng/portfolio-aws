@@ -1,5 +1,6 @@
 # TerraformでのAWS構築
-- 初回にterraform apply  -var="bucket_name=terraform-backend-itakaeng1126" -var="dynamodb_table=terraform-locks"
+- tfstateをS3に保存しています。
+- 初回にterraform apply  -var="bucket_name=terraform-backend-{好きな名前で}" -var="dynamodb_table=terraform-locks"
 
 ## 構成図（draw.io）
 
@@ -12,10 +13,13 @@
     - Public Subnet 1C:10.1.2.0/24
     - Private Subnet 1A:10.1.11.0/24
     - Private Subnet 1C:10.1.12.0/24
+- Internet Gateway
+- Elastic IP (NAT Gateway用)
+- NAT Gateway
+### 未着手
+- ALB
 - EC2
 - RDS（マルチAZ）
-- NAT Gateway
-- ALB
 
 ### セキュリティ対策
 - CloudTrail

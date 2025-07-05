@@ -14,7 +14,8 @@ resource "aws_s3_bucket" "tf_cloudtrail_bucket" {
 
   tags = {
     Name        = "cloudtrail-logs"       # 名前タグ
-    Environment = "dev"                   # 環境タグ（開発用）
+    Description = "CloudTrailのログを保存するS3バケット"
+    Environment = var.environment         # 環境タグ（開発用）
   }
 }
 

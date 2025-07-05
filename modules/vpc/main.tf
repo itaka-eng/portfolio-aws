@@ -4,7 +4,9 @@ resource "aws_vpc" "tf_vpc" {
     enable_dns_hostnames = true
     
     tags = {
-      Name = "tf_vpc"
+      Name = "tf_vpc" # 管理用の名前
+      Description = "Terraform用VPC"
+      Environment = var.environment # 環境タグ(開発用)
     }
 }
 
@@ -13,13 +15,12 @@ resource "aws_subnet" "tf_public_a" {
   vpc_id                  = aws_vpc.tf_vpc.id
   cidr_block              = "10.1.1.0/24"
   availability_zone       = "ap-northeast-1a"
-  map_public_ip_on_launch = true
-  # subnetにはdescription項目なし→tagsに記載
-
+  map_public_ip_on_launch = true  # EC2起動時に自動でパブリックIPを付与する(デフォルト:false)
+ 
   tags = {
     Name = "public-subnet-a"
-    # subnetにはdescription項目なし→tagsに記載
     Description = "公開用Webサーバ用のパブリックサブネット（AZ: 1a）"
+    Environment = var.environment # 環境タグ(開発用)
   }
 }
 
@@ -28,11 +29,12 @@ resource "aws_subnet" "tf_public_c" {
   vpc_id            = aws_vpc.tf_vpc.id
   cidr_block        = "10.1.2.0/24"
   availability_zone = "ap-northeast-1c"
-  map_public_ip_on_launch = true
-
+  map_public_ip_on_launch = true  # EC2起動時に自動でパブリックIPを付与する(デフォルト:false)
+ 
   tags = {
     Name = "public-subnet-c"
     Description = "公開用Webサーバ用のパブリックサブネット（AZ: 1c）"
+    Environment = var.environment # 環境タグ(開発用)
   }
 }
 
@@ -41,10 +43,11 @@ resource "aws_subnet" "tf_private_a" {
   vpc_id            = aws_vpc.tf_vpc.id
   cidr_block        = "10.1.11.0/24"
   availability_zone = "ap-northeast-1a"
-
+ 
   tags = {
     Name = "private-subnet-a"
     Description = "アプリケーション用のプライベートサブネット（AZ: 1a）"
+    Environment = var.environment # 環境タグ(開発用)
   }
 }
 
@@ -53,9 +56,75 @@ resource "aws_subnet" "tf_private_c" {
   vpc_id            = aws_vpc.tf_vpc.id
   cidr_block        = "10.1.12.0/24"
   availability_zone = "ap-northeast-1c"
-
+ 
   tags = {
     Name = "private-subnet-c"
     Description = "アプリケーション用のプライベートサブネット（AZ: 1c）"
+    Environment = var.environment # 環境タグ(開発用)
   }
+}
+
+# Internet Gateway
+resource "aws_internet_gateway" "tf_igw" {
+  vpc_id = aws_vpc.tf_vpc.id
+
+  tags = {
+    Name        = "igw" # 管理用の名前
+    Description = "パブリックサブネット用のInternetGateway"
+    Environment = var.environment # 環境タグ(開発用)
+  }
+}
+
+# NAT Gateway用のElastic IP
+resource "aws_eip" "tf_natgateway_eip" {
+  domain = "vpc"  # VPC向けEIPを指定（オプションだが明示的に付与）
+
+  tags ={
+    Name = "natgateway-eip" # 管理用の名前
+    Description = "NAT Gateway用のElastic IP(固定グローバルIP)"
+    Environment = var.environment    # 環境タグ(開発用)
+  }
+}
+
+# NAT Gateway
+resource "aws_nat_gateway" "tf_natgateway" {
+  depends_on = [ aws_internet_gateway.tf_igw ]  # Internet Gatewayを先に作成するよう明示
+  allocation_id = aws_eip.tf_natgateway_eip.id  # NAT Gatewayに関連付けるEIPのID(オプション)
+  subnet_id = aws_subnet.tf_public_a.id         # NAT Gatewayを配置するパブリックサブネット(AZ:1a)(必須)
+
+  tags = {
+    Name = "nat-gateway"  # 管理用の名前
+    Description = "パブリックサブネット(AZ:1a)に配置されたNAT Gateway"
+    Environment = var.environment # 環境タグ(開発用)
+  }
+}
+
+# プライベートサブネット用のルートテーブル
+resource "aws_route_table" "tf_rttable_private" {
+  vpc_id = aws_vpc.tf_vpc.id  # 関連付けるVPCのID(必須)
+
+  tags = {
+    Name = "route-table-private"  # 管理用の名前
+    Description = "プライベートサブネット用のルートテーブル"
+    Environment = var.environment # 環境タグ(開発用)
+  }
+}
+
+# ルート設定　プライベートサブネット→NAT Gateway
+resource "aws_route" "tf_route_private2natgateway" {
+  route_table_id = aws_route_table.tf_rttable_private.id  # 対象のルートテーブルのID
+  destination_cidr_block = "0.0.0.0/0"                    # 宛先CIDR(すべて、インターネット向け)
+  nat_gateway_id = aws_nat_gateway.tf_natgateway.id       # 経由するNAT GatewayのID
+}
+
+# ルートテーブルの関連付け　プライベートサブネット用ルートテーブル→プライベートサブネット1a
+resource "aws_route_table_association" "tf_rttable_private_1a" {
+  subnet_id = aws_subnet.tf_private_a.id                  # 対象のサブネットのID(AZ:1a)
+  route_table_id = aws_route_table.tf_rttable_private.id  # 関連付けるルートテーブルのID
+}
+
+# ルートテーブルの関連付け　プライベートサブネット用ルートテーブル→プライベートサブネット1c
+resource "aws_route_table_association" "tf_rttable_private_1c" {
+  subnet_id = aws_subnet.tf_private_c.id                  # 対象のサブネットのID(AZ:1c)
+  route_table_id = aws_route_table.tf_rttable_private.id  # 関連付けるルートテーブルのID
 }
