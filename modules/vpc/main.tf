@@ -9,7 +9,7 @@ resource "aws_vpc" "tf_vpc" {
 }
 
 # 公開用Webサーバ用のパブリックサブネット（AZ: 1a）
-resource "aws_subnet" "public_a" {
+resource "aws_subnet" "tf_public_a" {
   vpc_id                  = aws_vpc.tf_vpc.id
   cidr_block              = "10.1.1.0/24"
   availability_zone       = "ap-northeast-1a"
@@ -24,7 +24,7 @@ resource "aws_subnet" "public_a" {
 }
 
 # 公開用Webサーバ用のパブリックサブネット（AZ: 1c）
-resource "aws_subnet" "public_c" {
+resource "aws_subnet" "tf_public_c" {
   vpc_id            = aws_vpc.tf_vpc.id
   cidr_block        = "10.1.2.0/24"
   availability_zone = "ap-northeast-1c"
@@ -37,9 +37,9 @@ resource "aws_subnet" "public_c" {
 }
 
 # アプリケーション用のプライベートサブネット（AZ: 1a）
-resource "aws_subnet" "private_a" {
+resource "aws_subnet" "tf_private_a" {
   vpc_id            = aws_vpc.tf_vpc.id
-  cidr_block        = "10.1.10.0/24"
+  cidr_block        = "10.1.11.0/24"
   availability_zone = "ap-northeast-1a"
 
   tags = {
@@ -49,9 +49,9 @@ resource "aws_subnet" "private_a" {
 }
 
 # アプリケーション用のプライベートサブネット（AZ: 1c）
-resource "aws_subnet" "private_c" {
+resource "aws_subnet" "tf_private_c" {
   vpc_id            = aws_vpc.tf_vpc.id
-  cidr_block        = "10.1.11.0/24"
+  cidr_block        = "10.1.12.0/24"
   availability_zone = "ap-northeast-1c"
 
   tags = {
