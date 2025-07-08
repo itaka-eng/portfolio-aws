@@ -1,4 +1,5 @@
-# modulesの変数定義（宣言だけ、受取専用）
+# modulesの変数定義
+#（宣言だけ、受取専用）
 # リージョン
 variable "region" {
   description = "AWS region"
