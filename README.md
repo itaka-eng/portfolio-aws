@@ -2,8 +2,32 @@
 - tfstateをS3に保存しています。
 - 初回にterraform apply  -var="bucket_name=terraform-backend-{好きな名前で}" -var="dynamodb_table=terraform-locks"
 
-## backend
-- tfstateをS3に保存するために記述
+## ソース構造
+```
+portfolio-aws/
+├── backend/                    プロバイダ情報とtfstateをS3に保存するための箇所
+│   ├── main.tf
+│   ├── outputs.tf
+│   ├── provider.tf
+│   └── variables.tf
+├── envs/                       環境ごとにメインソースへの引き渡しのために記載
+│   └── dev/                    開発環境のリソース
+│       ├── backend.tf
+│       ├── cloudgtrail.tf
+│       ├── guardduty.tf
+│       ├── main.tf
+│       ├── provider.tf
+│       ├── variables.tf
+│       └── version.tf
+├── modules/                    メイン実行箇所（サービスごとにモジュール化）
+│   └── vpc/                    VPC ・・・現状全サービスを記載、後ほどモジュール化する
+│       ├── main.tf
+│       ├── variables.tf
+│       └── outputs.tf
+├── architecture.drawio         Draw.io on VSCode
+├── architecture.png            上記をPNGでエクスポートしたもの
+└── README.md                   当ファイル
+```
 
 ## 構成図（draw.io）
 ![構成図](architecture.png)
@@ -31,5 +55,5 @@
 - CloudTrail
 - GuardDuty
 
-## 金額（Princing Caliculater）
+## 金額（Princing Calculater）
 [Pricing Caliculater](https://calculator.aws/#/estimate?id=9d9291af33bccce67cbdd8431ba98dcb4ccf52d7)
