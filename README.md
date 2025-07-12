@@ -31,6 +31,7 @@ portfolio-aws/
 
 ## 構成図（draw.io）
 ![構成図](architecture.png)
+![セキュリティグループ](securitygroup.png)
 
 ### 構築対象
 - すべて東京リージョンに作成
@@ -49,7 +50,14 @@ portfolio-aws/
 ### 未着手
 - ALB
 - EC2
-- RDS（マルチAZ）
+- Auto Scaling Group(ASG)
+[Launch Template]
+        ↓
+[Target Group] ←────────────── [Application Load Balancer]
+        ↓                                  ↓
+[Auto Scaling Group] ─────────> [Listener (HTTP/HTTPS)]
+
+- RDS(単一AZ)
 
 ### セキュリティ対策
 - CloudTrail
