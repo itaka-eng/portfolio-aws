@@ -20,7 +20,11 @@ portfolio-aws/
 │       ├── variables.tf
 │       └── version.tf
 ├── modules/                    メイン実行箇所（サービスごとにモジュール化）
-│   └── vpc/                    VPC ・・・現状全サービスを記載、後ほどモジュール化する
+│   ├── iam/                    IAM
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   └── vpc/                    VPC ・・・現状他全サービスを記載、後ほどモジュール化する
 │       ├── main.tf
 │       ├── variables.tf
 │       └── outputs.tf
@@ -46,6 +50,8 @@ portfolio-aws/
 - Elastic IP (NAT Gateway用)
 - NAT Gateway
     - 単一AZ(1a)にのみ配置、共用
+    - 常時稼働だとそこそこな金額がかかるので、平日の日中帯（月〜金、9:00〜18:00）だけ稼働させる
+    - EventBridgeで自動化
 
 ### 未着手
 - ALB

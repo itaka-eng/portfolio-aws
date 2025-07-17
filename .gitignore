@@ -7,3 +7,5 @@ terraform.tfstate.backup
 override.tf
 override.tf.json
 .DS_Store
+# Node.js modules
+node_modules/

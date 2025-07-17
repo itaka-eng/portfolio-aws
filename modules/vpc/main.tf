@@ -1,3 +1,4 @@
+# VPC
 resource "aws_vpc" "tf_vpc" {
     cidr_block = var.vpc_cidr
     enable_dns_support = true
@@ -6,7 +7,7 @@ resource "aws_vpc" "tf_vpc" {
     tags = {
       Name = "tf_vpc" # 管理用の名前
       Description = "Terraform用VPC"
-      Environment = var.environment # 環境タグ(開発用)
+      Environment = var.environment # 環境タグ
     }
 }
 
@@ -20,7 +21,7 @@ resource "aws_subnet" "tf_public_a" {
   tags = {
     Name = "public-subnet-a"
     Description = "公開用Webサーバ用のパブリックサブネット（AZ: 1a）"
-    Environment = var.environment # 環境タグ(開発用)
+    Environment = var.environment # 環境タグ
   }
 }
 
@@ -34,7 +35,7 @@ resource "aws_subnet" "tf_public_c" {
   tags = {
     Name = "public-subnet-c"
     Description = "公開用Webサーバ用のパブリックサブネット（AZ: 1c）"
-    Environment = var.environment # 環境タグ(開発用)
+    Environment = var.environment # 環境タグ
   }
 }
 
@@ -47,7 +48,7 @@ resource "aws_subnet" "tf_private_a" {
   tags = {
     Name = "private-subnet-a"
     Description = "アプリケーション用のプライベートサブネット（AZ: 1a）"
-    Environment = var.environment # 環境タグ(開発用)
+    Environment = var.environment # 環境タグ
   }
 }
 
@@ -60,7 +61,7 @@ resource "aws_subnet" "tf_private_c" {
   tags = {
     Name = "private-subnet-c"
     Description = "アプリケーション用のプライベートサブネット（AZ: 1c）"
-    Environment = var.environment # 環境タグ(開発用)
+    Environment = var.environment # 環境タグ
   }
 }
 
@@ -71,7 +72,7 @@ resource "aws_internet_gateway" "tf_igw" {
   tags = {
     Name        = "igw" # 管理用の名前
     Description = "パブリックサブネット用のInternetGateway"
-    Environment = var.environment # 環境タグ(開発用)
+    Environment = var.environment # 環境タグ
   }
 }
 
@@ -82,7 +83,7 @@ resource "aws_eip" "tf_natgateway_eip" {
   tags ={
     Name = "natgateway-eip" # 管理用の名前
     Description = "NAT Gateway用のElastic IP(固定グローバルIP)"
-    Environment = var.environment    # 環境タグ(開発用)
+    Environment = var.environment    # 環境タグ
   }
 }
 
@@ -95,7 +96,7 @@ resource "aws_nat_gateway" "tf_natgateway" {
   tags = {
     Name = "nat-gateway"  # 管理用の名前
     Description = "パブリックサブネット(AZ:1a)に配置されたNAT Gateway"
-    Environment = var.environment # 環境タグ(開発用)
+    Environment = var.environment # 環境タグ
   }
 }
 
@@ -106,7 +107,7 @@ resource "aws_route_table" "tf_rttable_private" {
   tags = {
     Name = "route-table-private"  # 管理用の名前
     Description = "プライベートサブネット用のルートテーブル"
-    Environment = var.environment # 環境タグ(開発用)
+    Environment = var.environment # 環境タグ
   }
 }
 
@@ -128,3 +129,75 @@ resource "aws_route_table_association" "tf_rttable_private_1c" {
   subnet_id = aws_subnet.tf_private_c.id                  # 対象のサブネットのID(AZ:1c)
   route_table_id = aws_route_table.tf_rttable_private.id  # 関連付けるルートテーブルのID
 }
+
+# セキュリティグループ ALB用
+resource "aws_security_group" "tf_alb_sg" {
+  name        = "alb-sg"
+  description = "Allow HTTP and HTTPS traffic from the Internet"
+  vpc_id      = aws_vpc.tf_vpc.id
+
+  # インバウンドルール TCP/80をALL許可
+  ingress {
+    description = "Allow HTTP from anywhere"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # インバウンドルール TCP/443をALL許可 
+  ingress {
+    description = "Allow HTTPS from anywhere"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # アウトバウンドルール ALL許可（デフォルト）
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "alb-sg"    # 管理用の名前
+    Description = "ALB用セキュリティグループ（HTTP/HTTPS許可）"
+    Environment = var.environment # 環境タグ
+  }
+}
+
+# セキュリティグループ EC2用
+resource "aws_security_group" "tf_ec2_sg" {
+  name        = "ec2-sg"
+  description = "Allow traffic only from ALB SG"
+  vpc_id      = aws_vpc.tf_vpc.id
+
+  # インバウンドルール TCP/80をALB用SGから許可
+  ingress {
+    description = "Allow HTTP only from ALB security group"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    security_groups = [aws_security_group.tf_alb_sg.id]
+  }
+
+  # アウトバウンドルール ALL許可
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "ec2-sg"        # 管理用の名前
+    Description = "EC2用セキュリティグループ（ALBからの通信のみ許可）"
+    Environment = var.environment # 環境タグ
+  }
+}
+
