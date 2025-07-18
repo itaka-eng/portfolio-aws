@@ -9,3 +9,5 @@ override.tf.json
 .DS_Store
 # Node.js modules
 node_modules/
+result.json
+lambda.zip

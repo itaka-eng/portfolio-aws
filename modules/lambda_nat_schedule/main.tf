@@ -10,11 +10,12 @@ resource "aws_lambda_function" "tf_lambda_nat_scheduler" {
 
   timeout = 10
 
-  environment {
+  environment { # Lambdaスクリプト内で参照する変数受け渡し
     variables = {
-      NAT_GATEWAY_ID = var.nat_gateway_id
-      ALLOCATION_ID = var.eip_allocation_id
-      SUBNET_ID = var.subnet_id
+      NAT_GATEWAY_ID = var.nat_gateway_id   # NAT GatewayのID
+      ALLOCATION_ID = var.eip_allocation_id # 割り当て済みEIPのID
+      SUBNET_ID = var.subnet_id             # サブネットのID(NAT Gateway作成時にサブネット指定必須)
+      ENVIRONMENT = var.environment         # 環境タグ
     }
   }
 

@@ -24,6 +24,12 @@ portfolio-aws/
 │   │   ├── main.tf
 │   │   ├── variables.tf
 │   │   └── outputs.tf
+│   ├── lambda_nat_schedule/    Lambda(NAT Gatewayスケジュール稼働用)
+│   │   ├── index.js            Lambda関数本体(Node.js ver.20)
+│   │   ├── main.tf             Lambda関数定義
+│   │   ├── utils.js            Node.jsの副関数
+│   │   ├── variables.tf
+│   │   └── outputs.tf
 │   └── vpc/                    VPC ・・・現状他全サービスを記載、後ほどモジュール化する
 │       ├── main.tf
 │       ├── variables.tf
@@ -48,6 +54,8 @@ portfolio-aws/
     - Private Subnet 1C:10.1.12.0/24
 - Internet Gateway
 - Elastic IP (NAT Gateway用)
+    - 割当済みしているだけで料金かかる
+    - NAT Gatewayの作成削除の自動化（下記）に合わせてEIPも再作成、開放する
 - NAT Gateway
     - 単一AZ(1a)にのみ配置、共用
     - 常時稼働だとそこそこな金額がかかるので、平日の日中帯（月〜金、9:00〜18:00）だけ稼働させる
