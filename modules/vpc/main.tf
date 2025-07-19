@@ -77,28 +77,30 @@ resource "aws_internet_gateway" "tf_igw" {
 }
 
 # NAT Gateway用のElastic IP
-resource "aws_eip" "tf_natgateway_eip" {
-  domain = "vpc"  # VPC向けEIPを指定（オプションだが明示的に付与）
+# Lambdaで管理する、コメントアウト
+# resource "aws_eip" "tf_natgateway_eip" {
+#   domain = "vpc"  # VPC向けEIPを指定（オプションだが明示的に付与）
 
-  tags ={
-    Name = "natgateway-eip" # 管理用の名前
-    Description = "NAT Gateway用のElastic IP(固定グローバルIP)"
-    Environment = var.environment    # 環境タグ
-  }
-}
+#   tags ={
+#     Name = "natgateway-eip" # 管理用の名前
+#     Description = "NAT Gateway用のElastic IP(固定グローバルIP)"
+#     Environment = var.environment    # 環境タグ
+#   }
+# }
 
 # NAT Gateway
-resource "aws_nat_gateway" "tf_natgateway" {
-  depends_on = [ aws_internet_gateway.tf_igw ]  # Internet Gatewayを先に作成するよう明示
-  allocation_id = aws_eip.tf_natgateway_eip.id  # NAT Gatewayに関連付けるEIPのID(オプション)
-  subnet_id = aws_subnet.tf_public_a.id         # NAT Gatewayを配置するパブリックサブネット(AZ:1a)(必須)
+# Lambdaで管理する、コメントアウト
+# resource "aws_nat_gateway" "tf_natgateway" {
+#   depends_on = [ aws_internet_gateway.tf_igw ]  # Internet Gatewayを先に作成するよう明示
+#   allocation_id = aws_eip.tf_natgateway_eip.id  # NAT Gatewayに関連付けるEIPのID(オプション)
+#   subnet_id = aws_subnet.tf_public_a.id         # NAT Gatewayを配置するパブリックサブネット(AZ:1a)(必須)
 
-  tags = {
-    Name = "nat-gateway"  # 管理用の名前
-    Description = "パブリックサブネット(AZ:1a)に配置されたNAT Gateway"
-    Environment = var.environment # 環境タグ
-  }
-}
+#   tags = {
+#     Name = "nat-gateway"  # 管理用の名前
+#     Description = "パブリックサブネット(AZ:1a)に配置されたNAT Gateway"
+#     Environment = var.environment # 環境タグ
+#   }
+# }
 
 # プライベートサブネット用のルートテーブル
 resource "aws_route_table" "tf_rttable_private" {
@@ -112,11 +114,12 @@ resource "aws_route_table" "tf_rttable_private" {
 }
 
 # ルート設定　プライベートサブネット→NAT Gateway
-resource "aws_route" "tf_route_private2natgateway" {
-  route_table_id = aws_route_table.tf_rttable_private.id  # 対象のルートテーブルのID
-  destination_cidr_block = "0.0.0.0/0"                    # 宛先CIDR(すべて、インターネット向け)
-  nat_gateway_id = aws_nat_gateway.tf_natgateway.id       # 経由するNAT GatewayのID
-}
+# Lambdaで管理する、コメントアウト
+# resource "aws_route" "tf_route_private2natgateway" {
+#   route_table_id = aws_route_table.tf_rttable_private.id  # 対象のルートテーブルのID
+#   destination_cidr_block = "0.0.0.0/0"                    # 宛先CIDR(すべて、インターネット向け)
+#   nat_gateway_id = aws_nat_gateway.tf_natgateway.id       # 経由するNAT GatewayのID
+# }
 
 # ルートテーブルの関連付け　プライベートサブネット用ルートテーブル→プライベートサブネット1a
 resource "aws_route_table_association" "tf_rttable_private_1a" {

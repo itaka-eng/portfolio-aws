@@ -28,3 +28,9 @@ variable "ec2_key_name" {
   description = "EC2へのSSH接続用キーペア"
   default = "tf-aws-key"
 }
+
+# DLQ通知用メールアドレス
+variable "dlq_email" {
+  description = "DLQ通知用メールアドレス"
+  type        = string
+}

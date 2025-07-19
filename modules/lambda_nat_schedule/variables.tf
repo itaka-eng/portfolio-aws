@@ -14,19 +14,31 @@ variable "lambda_role_arn" {
 }
 
 # 割当済みEIP(NAT Gateway用)
-variable "eip_allocation_id" {
-  description = "割当済みEIP(NAT Gateway用)"
-  type = string
-}
+# variable "eip_allocation_id" {
+#   description = "割当済みEIP(NAT Gateway用)"
+#   type = string
+# }
 
 # NAT Gateway
-variable "nat_gateway_id" {
-  description = "NAT Gateway"
-  type = string
-}
+# variable "nat_gateway_id" {
+#   description = "NAT Gateway"
+#   type = string
+# }
 
 # パブリックサブネット(1a)
 variable "subnet_id" {
   description = "パブリックサブネット(1a)"
   type = string
+}
+
+# プライベートサブネット用ルートテーブルのID
+variable "route_table_id" {
+  description = "プライベートサブネット用のルートテーブル"
+  type = string
+}
+
+# DLQ通知用メールアドレス
+variable "dlq_email" {
+  description = "DLQ通知用メールアドレス"
+  type        = string
 }

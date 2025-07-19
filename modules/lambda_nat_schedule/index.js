@@ -1,70 +1,76 @@
 // Lambda実行関数 NatGatewayを削除するNode.js
-// 当スクリプト(と必要pkg)をlambda.zipとして圧縮する zip -r lambda.zip index.js utils.js node_modules/ package.json 
-// Node.js ver.18からAWS SDKを同梱する必要ある→当ディレクトリでnpm install aws-sdkして、lambda.zipにnode_modulesを含めること 
-// ↓手動実行方法（AWS CLI）
-// aws lambda invoke --function-name nat-gateway-scheduler --payload '{"action":"stop"}' --cli-binary-format raw-in-base64-out result.json
 const AWS = require('aws-sdk'); //CommonJS(require)なのでESMインポートに移行必要
-const { waitForNatGatewayDeletion } = require('./utils');
+const { // utils.jsから関数を取得
+  waitForNatGatewayDeletion,
+  waitForNatGatewayAvailable,
+  getNatGatewayIdByTag,
+  getEipAllocationIdByTag
+} = require('./utils');
 const ec2 = new AWS.EC2();
 
 exports.handler = async (event) => {
   const action = event.action;  // "start" or "stop" ←Lambda関数のinputで指定する
-  const natGatewayId = process.env.NAT_GATEWAY_ID;
-
-  // NAT_GATEWAY_IDがない場合エラーを返す
-  if (!natGatewayId) {
-    throw new Error("NAT_GATEWAY_ID is not set");
-  }
 
   try {
     if (action === "stop") {
-      // NAT Gateway 停止（削除）
+      // NAT GatewayのIDを取得
+      const natGatewayId = await getNatGatewayIdByTag("lambda-nat-gateway");
+      if (!natGatewayId) {
+        throw new Error("NAT Gateway not found");
+      }
+
+      // ルートテーブルからNAT Gatewayへのルートを削除
+      try {
+        await ec2.deleteRoute({
+          RouteTableId: process.env.ROUTE_TABLE_ID,
+          DestinationCidrBlock: "0.0.0.0/0"
+        }).promise();
+        console.log("Route to NAT Gateway deleted");
+      } catch (e) {
+        console.warn("Route deletion failed (possibly already deleted:)");
+      }
+
+      // NAT Gateway削除
       await ec2.deleteNatGateway({ NatGatewayId: natGatewayId }).promise();
+
+      // NAT Gatewayが削除完了するまで待つ
+      await waitForNatGatewayDeletion(natGatewayId);
       console.log(`Nat Gateway ${natGatewayId} stopped`);
 
-      // NAT Gatewayが削除完了するまで待つ処理を呼び出し(utils.js)
-      await waitForNatGatewayDeletion(natGatewayId);
-
-      // EIPの割当IDを取得
-      const allocationId = process.env.ALLOCATION_ID;
+      // EIPの割当ID取得と解放
+      const allocationId = await getEipAllocationIdByTag("lambda-natgateway-eip");
       if (allocationId) {
-        //// 10秒待機（NAT Gateway削除後すぐはエラーになるため）          // 別関数にしたのでコメントアウト
-        //await new Promise(resolve => setTimeout(resolve, 10000)); // 別関数にしたのでコメントアウト
-        // EIP割当開放
         await ec2.releaseAddress({AllocationId: allocationId }).promise();
         console.log(`Elastic IP ${allocationId} released`);
       } else {
-        console.warn("ALLOCATION_ID is not set, os EIP not released");
+        console.warn("ALLOCATION_ID is not set, or EIP not released");
       }
     } else if (action === "start") {
-      // NAT Gateway 開始（作成）
-      //const allocationId = process.env.ALLOCATION_ID; // start時にEIPを再取得するのでコメントアウト
-      const subnetId = process.env.SUBNET_ID;
-
-      // Elastic IPを再取得
+      // Elastic IPを新規割当
       const eipResult = await ec2.allocateAddress({
         Domain: "vpc",
         TagSpecifications: [
           {
             ResourceType: "elastic-ip",
             Tags: [
-              { Key: "Name", Value: "natgateway-eip"},
+              { Key: "Name", Value: "lambda-natgateway-eip"},
               { Key: "Description", Value: "Lambdaで自動生成 NAT Gateway用のElastic IP(固定グローバルIP)"},
               { Key: "Environment", Value: process.env.ENVIRONMENT || "dev"}
             ]
           }
         ]
       }).promise();
-      const allocationId = eipResult.AllocationId;
+      console.log(`Elastic IP allocated: ${eipResult.AllocationId}`);
 
+      // NAT Gatewayの作成
       const result = await ec2.createNatGateway({
-        AllocationId: allocationId,
-        SubnetId: subnetId,
+        AllocationId: eipResult.AllocationId,
+        SubnetId:     process.env.SUBNET_ID,
         TagSpecifications: [
           {
             ResourceType: "natgateway",
             Tags: [
-              { Key: "Name", Value: "nat-gateway"},
+              { Key: "Name", Value: "lambda-nat-gateway"},
               { Key: "Description", Value: "Lambdaで自動生成 パブリックサブネット(AZ:1a)に配置されたNAT Gateway"},
               { Key: "Environment", Value: process.env.ENVIRONMENT || "dev"}
             ]
@@ -72,7 +78,18 @@ exports.handler = async (event) => {
         ]
       }).promise();
       console.log(`NAT Gateway started: ${JSON.stringify(result)}`);
-      console.log(`Elastic IP allocated: ${allocationId}`);
+
+      // NAT Gatewayが利用可能になるまで待つ
+      await waitForNatGatewayAvailable(result.NatGateway.NatGatewayId);
+
+      // ルートテーブルにNAT Gatewayへのルートを追加
+      await ec2.createRoute({
+        RouteTableId: process.env.ROUTE_TABLE_ID,  // ルートテーブルIDはenvで渡す
+        DestinationCidrBlock: "0.0.0.0/0",
+        NatGatewayId: result.NatGateway.NatGatewayId
+      }).promise();
+      console.log(`Route added: 0.0.0.0/0 -> NAT Gateway ${result.NatGateway.NatGatewayId}`);
+
     } else {
       throw new Error(`Unknown action: ${action}`);
     }

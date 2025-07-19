@@ -21,7 +21,7 @@ module "lambda_nat_schedule" {
     # 変数の受け渡し
     environment = var.environment   # 環境タグ
     lambda_role_arn = module.iam.lambda_role_arn        # Lambda用IAMロールのARN
-    eip_allocation_id = module.vpc.eip_allocation_id    # 割当済みEIP(NAT Gateway用)
-    nat_gateway_id = module.vpc.nat_gateway_id          # NAT Gateway
     subnet_id = module.vpc.subnet_id                    # パブリックサブネット(1a)
+    route_table_id = module.vpc.route_table_id          # プライベートサブネット用のルートテーブルのID
+    dlq_email = var.dlq_email
 }

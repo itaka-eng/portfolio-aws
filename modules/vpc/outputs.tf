@@ -19,16 +19,23 @@ output "security_group_ec2_id" {
 }
 
 # 割当済みElastic IPのID
-output "eip_allocation_id" {
-  value = aws_eip.tf_natgateway_eip.id
-}
+# Lambdaで管理する、コメントアウト
+# output "eip_allocation_id" {
+#   value = aws_eip.tf_natgateway_eip.id
+# }
 
 # NAT GatewayのID
-output "nat_gateway_id" {
-  value = aws_nat_gateway.tf_natgateway.id
-}
+# Lambdaで管理する、コメントアウト
+# output "nat_gateway_id" {
+#   value = aws_nat_gateway.tf_natgateway.id
+# }
 
 # パブリックサブネット(1a)のID
 output "subnet_id" {
   value = aws_subnet.tf_public_a.id
+}
+
+# プライベートサブネット用のルートテーブルのID
+output "route_table_id" {
+  value = aws_route_table.tf_rttable_private.id
 }

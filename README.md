@@ -79,3 +79,12 @@ portfolio-aws/
 
 ## 金額（Princing Calculater）
 [Pricing Caliculater](https://calculator.aws/#/estimate?id=9d9291af33bccce67cbdd8431ba98dcb4ccf52d7)
+
+## Node.js ver.18からAWS SDKを同梱する必要があります
+- 当ディレクトリでnpm install aws-sdkして、lambda.zipにnode_modulesを含めること
+
+## lambda.zipの作り方
+- zip -r lambda.zip index.js utils.js node_modules/ package.json
+
+## Lambda関数(NAT Gatewayスケジュール起動)の手動実行
+- aws lambda invoke --function-name nat-gateway-scheduler --payload '{"action":"start"}' --cli-binary-format raw-in-base64-out --cli-read-timeout 300 result.json
